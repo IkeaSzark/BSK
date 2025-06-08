@@ -68,13 +68,15 @@ class SecondTab(QWidget):
 
         layout = QVBoxLayout()
         self.result_label = QLabel("")
+        self.result_label2 = QLabel("")
         self.open_pdf_button = QPushButton("Wybierz PDF")
         self.open_key_button = QPushButton("Wybierz klucz")
         self.verify_button = QPushButton("Zweryfikuj podpis")
         self.open_pdf_button.clicked.connect(self.open_pdf_dialog)
-        self.open_pdf_button.clicked.connect(self.open_key_dialog)
+        self.open_key_button.clicked.connect(self.open_key_dialog)
         self.verify_button.clicked.connect(self.verify_signature)
         layout.addWidget(self.result_label)
+        layout.addWidget(self.result_label2)
         layout.addWidget(self.open_pdf_button)
         layout.addWidget(self.open_key_button)
         layout.addWidget(self.verify_button)
@@ -90,9 +92,9 @@ class SecondTab(QWidget):
         if file_dialog.exec():
             selected_file = file_dialog.selectedFiles()[0]
             if selected_file.lower().endswith(".pem"):
-                self.result_label.setText("Wybrano poprawny plik klucza.")
+                self.result_label2.setText("Wybrano poprawny plik klucza.")
             else:
-                self.result_label.setText("Wybrany plik nie jest plikiem klucza.")
+                self.result_label2.setText("Wybrany plik nie jest plikiem klucza.")
 
     def open_pdf_dialog(self):
         file_dialog = QFileDialog(self)
