@@ -5,6 +5,7 @@ from Crypto.Random import get_random_bytes
 import win32api
 import win32file
 import getpass
+from PyQt6.QtWidgets import QInputDialog
 
 def DetectUSB():
     # Find USB drive

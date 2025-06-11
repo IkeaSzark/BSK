@@ -1,5 +1,5 @@
 import sys
-
+from PyQt6.QtWidgets import QInputDialog, QLineEdit
 from PyPDF2 import PdfWriter, PdfReader
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QFileDialog, QLabel, QVBoxLayout, QTabWidget
 import win32api
@@ -59,11 +59,18 @@ class MainTab(QWidget):
             self.result_label.setText("USB drive with private key not found.")
             return
 
-        try:
-            # Get PIN from user
-            from getpass import getpass
-            pin = getpass("Enter your PIN to decrypt the private key: ")
+        # Show password dialog
+        pin, ok = QInputDialog.getText(
+            self,
+            'PIN Required',
+            'Enter your PIN to decrypt the private key:',
+            echo=QLineEdit.EchoMode.Password  # Correct way to hide input
+        )
+        if not ok or not pin:
+            self.result_label.setText("PIN entry cancelled.")
+            return
 
+        try:
             # Load encrypted private key from USB
             with open(self._USB_letter + "encrypted_private.pem", "r") as f:
                 encrypted_data = f.read()
@@ -75,17 +82,22 @@ class MainTab(QWidget):
                 return
 
             # Create PDF signature
-            signature = self.create_pdf_signature(private_key, self._PDF_file)
+            signed_pdf = self.create_pdf_signature(private_key, self._PDF_file)
+            if not signed_pdf:
+                self.result_label.setText("Failed to sign PDF.")
+                return
 
             # Save signed PDF
             output_file = self._PDF_file.replace(".pdf", "_signed.pdf")
             with open(output_file, "wb") as f:
-                f.write(signature)
+                f.write(signed_pdf)
 
             self.result_label.setText(f"PDF successfully signed and saved as: {output_file}")
+            self.result_label.setStyleSheet("color: green")
 
         except Exception as e:
             self.result_label.setText(f"Error during signing: {str(e)}")
+            self.result_label.setStyleSheet("color: red")
 
     def decrypt_private_key(self, encrypted_data, pin):
         try:
@@ -254,10 +266,12 @@ class SecondTab(QWidget):
 
             # Get signature from metadata
             if not hasattr(pdf_reader, 'metadata') or not pdf_reader.metadata:
+                self.result_label.setText("No metadata found in PDF")
                 return False
 
             signature_b64 = pdf_reader.metadata.get('/Signature', '')
             if not signature_b64:
+                self.result_label.setText("No signature found in PDF metadata")
                 return False
 
             signature = base64.b64decode(signature_b64)
@@ -277,13 +291,17 @@ class SecondTab(QWidget):
             verifier = pkcs1_15.new(rsa_key)
             verifier.verify(pdf_hash, signature)
 
+            self.result_label.setText("Signature is VALID")
+            self.result_label.setStyleSheet("color: green")
             return True
 
         except (ValueError, TypeError) as e:
-            print(f"Verification failed: {str(e)}")
+            self.result_label.setText(f"Invalid signature: {str(e)}")
+            self.result_label.setStyleSheet("color: red")
             return False
         except Exception as e:
-            print(f"Verification error: {str(e)}")
+            self.result_label.setText(f"Verification error: {str(e)}")
+            self.result_label.setStyleSheet("color: red")
             return False
 
 class MainWindow(QMainWindow):
